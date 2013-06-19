@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.Vector;
 
 import com.yahoo.ycsb.measurements.Measurements;
+import com.yahoo.ycsb.penalty.Penalty;
+import com.yahoo.ycsb.penalty.SchedulerParameter;
 
 /**
  * Wrapper around a "real" DB that measures latencies and counts return codes.
@@ -86,10 +88,32 @@ public class DBWrapper extends DB
 		long st=System.currentTimeMillis();
 		int res=_db.read(table,key,fields,result);
 		long en=System.currentTimeMillis();
-		_measurements.measure("READ",(int)(en-st));
-		_measurements.reportReturnCode("READ",res);
+	    _measurements.measure("READ",(int)(en-st));
+	    _measurements.reportReturnCode("READ",res);
+		
+	    /*******chen add *****/
+		String paraString = result.get("scheduler");
+		Penalty penalty = new SchedulerParameter(paraString);
+		
+		penaltyresult(penalty, res);
+		/***************/
+		
+
 		return res;
 	}
+	
+	public void penaltyresult(Penalty penalty, int res)
+	{
+	    _measurements.measure("Total Penalty", (int)penalty.getTotalPenalty());
+        _measurements.reportReturnCode("Total Penalty", res);
+        
+        _measurements.measure("QoS Penalty", (int)penalty.getQoSPenalty());
+        _measurements.reportReturnCode("QoS Penalty", res);
+        
+        _measurements.measure("QoD Penalty", (int)penalty.getQoDPenalty());
+        _measurements.reportReturnCode("QoD Penalty", res);
+	}
+	
 
 	/**
 	 * Perform a range scan for a set of records in the database. Each field/value pair from the result will be stored in a HashMap.

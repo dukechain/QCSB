@@ -24,6 +24,8 @@ import java.util.Enumeration;
 import java.util.Random;
 import java.util.Vector;
 
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.RestoreAction;
+
 
 /**
  * Basic DB that just prints out the requested operations, instead of doing them against a database.
@@ -118,6 +120,8 @@ public class BasicDB extends DB
 			}
 
 			System.out.println("]");
+			
+			result.put("scheduler", "20,100,1.0,1.0,true,-1,-1,-1,-1,-1,-1,-1,-1");
 		}
 
 		return 0;
@@ -240,8 +244,7 @@ public class BasicDB extends DB
 	/**
 	 * Short test of BasicDB
 	 */
-	/*
-	public static void main(String[] args)
+	/*public static void main(String[] args)
 	{
 		BasicDB bdb=new BasicDB();
 

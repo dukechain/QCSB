@@ -743,7 +743,7 @@ public class Client
 		{
 			try
 			{
-				t.join();
+				t.join(); // 等待直到指定的线程死亡
 			}
 			catch (InterruptedException e)
 			{

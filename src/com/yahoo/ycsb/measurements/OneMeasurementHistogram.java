@@ -115,9 +115,13 @@ public class OneMeasurementHistogram extends OneMeasurement
   public void exportMeasurements(MeasurementsExporter exporter) throws IOException
   {
     exporter.write(getName(), "Operations", operations);
-    exporter.write(getName(), "AverageLatency(ms)", (((double)totallatency)/((double)operations)));
-    exporter.write(getName(), "MinLatency(ms)", min);
-    exporter.write(getName(), "MaxLatency(ms)", max);
+//    exporter.write(getName(), "AverageLatency(ms)", (((double)totallatency)/((double)operations)));
+//    exporter.write(getName(), "MinLatency(ms)", min);
+//    exporter.write(getName(), "MaxLatency(ms)", max);
+    
+    exporter.write(getName(), "Average(ms)", (((double)totallatency)/((double)operations)));
+    exporter.write(getName(), "Min(ms)", min);
+    exporter.write(getName(), "Max(ms)", max);
     
     int opcounter=0;
     boolean done95th=false;
@@ -126,12 +130,14 @@ public class OneMeasurementHistogram extends OneMeasurement
       opcounter+=histogram[i];
       if ( (!done95th) && (((double)opcounter)/((double)operations)>=0.95) )
       {
-        exporter.write(getName(), "95thPercentileLatency(ms)", i);
+//        exporter.write(getName(), "95thPercentileLatency(ms)", i);
+        exporter.write(getName(), "95thPercentile(ms)", i);
         done95th=true;
       }
       if (((double)opcounter)/((double)operations)>=0.99)
       {
-        exporter.write(getName(), "99thPercentileLatency(ms)", i);
+//        exporter.write(getName(), "99thPercentileLatency(ms)", i);
+        exporter.write(getName(), "99thPercentile(ms)", i);
         break;
       }
     }
