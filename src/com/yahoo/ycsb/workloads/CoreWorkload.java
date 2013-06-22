@@ -17,6 +17,7 @@
 
 package com.yahoo.ycsb.workloads;
 
+import java.io.File;
 import java.util.Properties;
 import com.yahoo.ycsb.*;
 import com.yahoo.ycsb.generator.CounterGenerator;
@@ -31,7 +32,15 @@ import com.yahoo.ycsb.measurements.Measurements;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.StringTokenizer;
 import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
+
+import org.apache.cassandra.db.SchedulerParameter;
+
+
+
+
 
 /**
  * The core benchmark scenario. Represents a set of clients doing simple CRUD operations. The relative 
@@ -210,6 +219,13 @@ public class CoreWorkload extends Workload
 	 */
 	public static final String INSERT_ORDER_PROPERTY_DEFAULT="hashed";
 	
+	/**
+	 * chen add
+	 */
+	public static final String WORKLOAD_PATH_PROPERTY="workloadpath";
+	
+	public static final String WORKLOAD_PATH_PROPERTY_DEFAULT="./workload.txt";
+	
 	IntegerGenerator keysequence;
 
 	DiscreteGenerator operationchooser;
@@ -225,6 +241,100 @@ public class CoreWorkload extends Workload
 	boolean orderedinserts;
 
 	int recordcount;
+	
+	
+	//chen add
+	boolean oldworkload = false;
+	
+	String workloadpath = null;
+	
+	BlockingQueue<String> workloadhistories;
+	
+	
+	class OperationLog
+    {
+        public String _name;
+        public String _key;
+        public HashSet<String> _field;
+        public String _payload;
+        
+        private final String token = "\t";
+        private final String fieldtoken = "|";
+
+        OperationLog(String _name, String _key, HashSet<String> _field, String _payload)
+        {
+            this._name = _name;
+            this._key = _key;
+            this._field = _field;
+            this._payload = _payload;
+        }
+        
+        OperationLog(String str)
+        {
+            StringTokenizer tokenizer = new StringTokenizer(str, token);
+            
+            _name = tokenizer.nextToken();
+            _key = tokenizer.nextToken();
+            
+            String field = tokenizer.nextToken();
+            
+            if (field.equals("ALLfields"))
+            {
+                _field = null;
+            }
+            else {
+                _field = new HashSet<String>();
+                
+                StringTokenizer fieldTokenizer = new StringTokenizer(field, fieldtoken);
+                while (fieldTokenizer.hasMoreTokens())
+                {
+                    String f = fieldTokenizer.nextToken();
+                    
+                    _field.add(f);
+                    
+                }
+            }
+            
+            
+            if (tokenizer.hasMoreTokens())
+            {
+                _payload = tokenizer.nextToken();
+            }
+            else {
+                _payload = null;
+            }
+        }
+        
+        public String toString()
+        {
+            StringBuffer sb = new StringBuffer();
+            
+            sb.append(_name);
+            sb.append(token);
+            
+            sb.append(_key);
+            sb.append(token);
+            
+            if (_field != null)
+            {
+                for (String str : _field)
+                {
+                    sb.append(str);
+                    sb.append(fieldtoken);
+                }
+            }
+            else {
+                sb.append("ALLfields");
+            }
+            sb.append(token);
+            
+            sb.append(_payload);
+            
+            return sb.toString();
+        }
+        
+        
+    }
 	
 	/**
 	 * Initialize the scenario. 
@@ -249,6 +359,32 @@ public class CoreWorkload extends Workload
 		
 		readallfields=Boolean.parseBoolean(p.getProperty(READ_ALL_FIELDS_PROPERTY,READ_ALL_FIELDS_PROPERTY_DEFAULT));
 		writeallfields=Boolean.parseBoolean(p.getProperty(WRITE_ALL_FIELDS_PROPERTY,WRITE_ALL_FIELDS_PROPERTY_DEFAULT));
+		
+		/**
+		 * chen add
+		 */
+		workloadpath = p.getProperty(WORKLOAD_PATH_PROPERTY);
+		if (workloadpath!=null)
+        {
+		    oldworkload = true;
+	        workloadhistories = Utils.Reader(new File(workloadpath));
+
+        }
+		else {
+		    oldworkload = false;
+		    p.setProperty(WORKLOAD_PATH_PROPERTY, WORKLOAD_PATH_PROPERTY_DEFAULT);
+		    
+		    workloadpath = WORKLOAD_PATH_PROPERTY_DEFAULT;
+		    
+		    File file = new File(workloadpath);
+		    if (file.exists())
+            {
+                file.delete();
+            }
+        }
+		
+		
+		
 		
 		if (p.getProperty(INSERT_ORDER_PROPERTY,INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed")==0)
 		{
@@ -328,6 +464,13 @@ public class CoreWorkload extends Workload
 		{
 			throw new WorkloadException("Distribution \""+scanlengthdistrib+"\" not allowed for scan length");
 		}
+
+	}
+	
+	
+	public void writeOperation(OperationLog op)
+	{
+	    Utils.writeLineAppend(workloadpath, op.toString());
 	}
 
 	/**
@@ -365,6 +508,14 @@ public class CoreWorkload extends Workload
 	 */
 	public boolean doTransaction(DB db, Object threadstate)
 	{
+	    /**
+	     * chen add
+	     */
+	    if (oldworkload)
+        {
+            return doTransaction(db);
+        }
+	    
 		String op=operationchooser.nextString();
 
 		if (op.compareTo("READ")==0)
@@ -390,8 +541,62 @@ public class CoreWorkload extends Workload
 		
 		return true;
 	}
+	
+	public boolean doTransaction(DB db)
+    {
+	    if (workloadhistories.isEmpty())
+        {
+            return true;
+        }
+	    
+	    OperationLog operation = null;
+        try
+        {
+            operation = new OperationLog(workloadhistories.take());
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
+        
+        String op = operation._name;
 
-	public void doTransactionRead(DB db)
+        if (op.compareTo("READ")==0)
+        {
+            doTransactionRead(db, operation);
+        }
+        else if (op.compareTo("UPDATE")==0)
+        {
+            doTransactionUpdate(db, operation);
+        }
+        else if (op.compareTo("INSERT")==0)
+        {
+            doTransactionInsert(db);
+        }
+        else if (op.compareTo("SCAN")==0)
+        {
+            doTransactionScan(db);
+        }
+        else
+        {
+            doTransactionReadModifyWrite(db);
+        }
+        
+        return true;
+    }
+
+    public void doTransactionRead(DB db, OperationLog operation)
+    {
+        String keyname=operation._key;
+
+        HashSet<String> fields=operation._field;
+        
+        //operation._payload;
+
+        db.read(table,keyname,fields,new HashMap<String,String>());   
+    }
+
+    public void doTransactionRead(DB db)
 	{
 		//choose a random key
 		int keynum;
@@ -417,8 +622,25 @@ public class CoreWorkload extends Workload
 			fields=new HashSet<String>();
 			fields.add(fieldname);
 		}
+		
+		SchedulerParameter paras = new SchedulerParameter();
+		
+		paras.tardiness_deadline = new UniformIntegerGenerator(0, 1000).nextInt();
+		
+		paras.staleness_deadline = new UniformIntegerGenerator(0, 1000).nextInt();
+		
+		paras.QoS_preference = 0.5;
+		
+		paras.query_weight = 1;
 
-		db.read(table,keyname,fields,new HashMap<String,String>());
+		OperationLog oplog = new OperationLog("READ", keyname, fields, paras.toString());
+		
+		writeOperation(oplog);
+		
+		//db.read(table,keyname,fields,new HashMap<String,String>());
+		HashMap<String, String> pa = new HashMap<String, String>();
+		pa.put("para", paras.toString());
+		db.read(table,keyname,fields,pa);
 	}
 	
 	public void doTransactionReadModifyWrite(DB db)
@@ -513,6 +735,42 @@ public class CoreWorkload extends Workload
 
 		db.scan(table,startkeyname,len,fields,new Vector<HashMap<String,String>>());
 	}
+	
+	private void doTransactionUpdate(DB db, OperationLog operation)
+    {
+	     //choose a random key
+	    String keyname=operation._key;
+
+        HashSet<String> fields=operation._field;
+
+        HashMap<String,String> values=new HashMap<String,String>();
+
+        if (writeallfields)
+        {
+           //new data for all the fields
+           for (int i=0; i<fieldcount; i++)
+           {
+              String fieldname="field"+i;
+              String data=Utils.ASCIIString(fieldlength);          
+              values.put(fieldname,data);
+           }
+        }
+        else
+        {
+           //update a random field
+           //String fieldname="field"+fieldchooser.nextString();
+           
+           for (String fieldname : fields)
+           {
+               String data=Utils.ASCIIString(fieldlength);         
+               values.put(fieldname,data);
+           }
+        }
+        
+        
+        db.update(table,keyname,values);
+        
+    }
 
 	public void doTransactionUpdate(DB db)
 	{
@@ -532,6 +790,8 @@ public class CoreWorkload extends Workload
 
 		HashMap<String,String> values=new HashMap<String,String>();
 
+		
+		HashSet<String> fields = new HashSet<String>();
 		if (writeallfields)
 		{
 		   //new data for all the fields
@@ -541,14 +801,27 @@ public class CoreWorkload extends Workload
 		      String data=Utils.ASCIIString(fieldlength);		   
 		      values.put(fieldname,data);
 		   }
+		   
+		   //chen add
+		   fields = null;
 		}
 		else
 		{
+		   
 		   //update a random field
 		   String fieldname="field"+fieldchooser.nextString();
 		   String data=Utils.ASCIIString(fieldlength);		   
 		   values.put(fieldname,data);
+		   
+		   //chen
+		   fields.add(fieldname);
 		}
+		
+		//chen
+		OperationLog oplog = new OperationLog("UPDATE", keyname, fields, "");
+        
+        writeOperation(oplog);
+
 
 		db.update(table,keyname,values);
 	}

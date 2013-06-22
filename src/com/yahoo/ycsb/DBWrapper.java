@@ -24,7 +24,7 @@ import java.util.Vector;
 
 import com.yahoo.ycsb.measurements.Measurements;
 import com.yahoo.ycsb.penalty.Penalty;
-import com.yahoo.ycsb.penalty.SchedulerParameter;
+import com.yahoo.ycsb.recordlogs.RecordLogs;
 
 /**
  * Wrapper around a "real" DB that measures latencies and counts return codes.
@@ -33,11 +33,16 @@ public class DBWrapper extends DB
 {
 	DB _db;
 	Measurements _measurements;
+	
+	//chen add
+	RecordLogs _recordlogs;
 
 	public DBWrapper(DB db)
 	{
 		_db=db;
 		_measurements=Measurements.getMeasurements();
+		
+		_recordlogs=RecordLogs.getRecordLogs();
 	}
 
 	/**
@@ -93,9 +98,15 @@ public class DBWrapper extends DB
 		
 	    /*******chen add *****/
 		String paraString = result.get("scheduler");
-		Penalty penalty = new SchedulerParameter(paraString);
+		Penalty penalty = new Penalty(paraString);
+		
+		//penalty
 		
 		penaltyresult(penalty, res);
+		
+		
+		_recordlogs.recordlog("READ record", "key="+key +", "+ penalty.toprint());
+		
 		/***************/
 		
 

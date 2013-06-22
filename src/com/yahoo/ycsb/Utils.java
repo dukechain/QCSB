@@ -17,7 +17,19 @@
 
 package com.yahoo.ycsb;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+
 
 /**
  * Utility functions.
@@ -103,5 +115,60 @@ public class Utils
 	    //hashval = hashval ^ octet;
 	 }
 	 return Math.abs(hashval);
+      }
+      
+      /**
+       * chen add
+       * TODO 添加方法注释
+       * @param f
+       * @return
+       */
+      public static BlockingQueue<String> Reader(File f) {
+          BlockingQueue<String> stringlist = new LinkedBlockingQueue<String>();
+          
+          System.out.println("Start to read file from " + f.getPath());
+          
+          BufferedReader in = null;
+          try {
+              in = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF8"));
+              
+              String str = new String();
+              
+              while ((str = in.readLine())!=null) {
+                  stringlist.add(str);
+
+              }
+              
+              in.close();
+          } catch (Exception e) {
+              e.printStackTrace();
+          }
+
+          return stringlist;
+      }
+      
+      public static void writeLineAppend(String file, String conent) {   
+          File dir = new File(file).getParentFile();
+          
+          if (!dir.exists()) {
+              dir.mkdirs();
+          }
+          
+          BufferedWriter out = null;   
+          try {   
+              out = new BufferedWriter(new OutputStreamWriter(
+                      new FileOutputStream(file, true),"UTF8"));
+              out.write(conent);
+              out.newLine();
+              
+          } catch (Exception e) {   
+              e.printStackTrace();   
+          } finally {
+              try {
+                  out.close();   
+              } catch (IOException e) {   
+                  e.printStackTrace();   
+              }   
+          }   
       }
 }

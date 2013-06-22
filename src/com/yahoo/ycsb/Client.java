@@ -25,6 +25,7 @@ import java.util.*;
 import com.yahoo.ycsb.measurements.Measurements;
 import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
 import com.yahoo.ycsb.measurements.exporter.TextMeasurementsExporter;
+import com.yahoo.ycsb.recordlogs.RecordLogs;
 
 //import org.apache.log4j.BasicConfigurator;
 
@@ -416,6 +417,11 @@ public class Client
 			exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
 
 			Measurements.getMeasurements().exportMeasurements(exporter);
+			
+			/*Chen add*/
+			RecordLogs.getRecordLogs().exportRecordLogs(exporter);
+			/**/
+			
 		} finally
 		{
 			if (exporter != null)
@@ -645,6 +651,8 @@ public class Client
 		
 		//set up measurements
 		Measurements.setProperties(props);
+		//chen add
+		RecordLogs.setProperties(props);
 		
 		//load the workload
 		ClassLoader classLoader = Client.class.getClassLoader();
