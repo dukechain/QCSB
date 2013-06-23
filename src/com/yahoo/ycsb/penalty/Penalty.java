@@ -12,28 +12,33 @@ public class Penalty extends SchedulerParameter
     
     public double getTotalPenalty()
     {
-        return 0d;
+        return getQoSPenalty()+getQoDPenalty();
     }
     
     
     public double getQoSPenalty()
     {
-        return 0d;
+        return QoS_preference*query_weight*getTardiness();
     }
     
     public double getQoDPenalty()
     {
-        return 0d;
+        return QoS_preference*query_weight*getStaleness();
     }
     
     public double getTardiness()
     {
-        return 0d;
+        return local_finished_time-tardiness_deadline;
     }
     
     public double getStaleness()
     {
-        return 0d;
+        if (staleness_deadline==Long.MAX_VALUE)
+        {
+            return 0;
+        }
+        
+        return local_finished_time-staleness_deadline;
     }
     
     public String toprint()

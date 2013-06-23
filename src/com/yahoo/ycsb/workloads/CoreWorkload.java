@@ -481,6 +481,11 @@ public class CoreWorkload extends Workload
 	 */
 	public boolean doInsert(DB db, Object threadstate)
 	{
+	    if (oldworkload)
+        {
+            return doInsert(db);
+        }
+	    
 		int keynum=keysequence.nextInt();
 		if (!orderedinserts)
 		{
@@ -488,17 +493,61 @@ public class CoreWorkload extends Workload
 		}
 		String dbkey="user"+keynum;
 		HashMap<String,String> values=new HashMap<String,String>();
+		
+		HashSet<String> fields = new HashSet<String>();
+		
 		for (int i=0; i<fieldcount; i++)
 		{
 			String fieldkey="field"+i;
 			String data=Utils.ASCIIString(fieldlength);
 			values.put(fieldkey,data);
+			
+			fields.add(fieldkey);
 		}
+		
+		
+		OperationLog oplog = new OperationLog("LOAD", dbkey, fields, "");
+        
+        writeOperation(oplog);
+		
 		if (db.insert(table,dbkey,values) == 0)
 			return true;
 		else
 			return false;
 	}
+	
+	public boolean doInsert(DB db)
+    {
+	    if (workloadhistories.isEmpty())
+        {
+            return true;
+        }
+        
+        OperationLog operation = null;
+        try
+        {
+            operation = new OperationLog(workloadhistories.take());
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
+	    
+	   
+        String dbkey=operation._key;
+        HashMap<String,String> values=new HashMap<String,String>();
+        
+        for (String fieldname : operation._field)
+        {
+            String data=Utils.ASCIIString(fieldlength);         
+            values.put(fieldname,data);
+        }
+
+        if (db.insert(table,dbkey,values) == 0)
+            return true;
+        else
+            return false;
+    }
 
 	/**
 	 * Do one transaction operation. Because it will be called concurrently from multiple client threads, this 
@@ -571,7 +620,7 @@ public class CoreWorkload extends Workload
         }
         else if (op.compareTo("INSERT")==0)
         {
-            doTransactionInsert(db);
+            doTransactionInsert(db, operation);
         }
         else if (op.compareTo("SCAN")==0)
         {
@@ -591,9 +640,12 @@ public class CoreWorkload extends Workload
 
         HashSet<String> fields=operation._field;
         
-        //operation._payload;
+        HashMap<String, String> pa = new HashMap<String, String>();
+        pa.put("para", operation._payload.toString());
 
-        db.read(table,keyname,fields,new HashMap<String,String>());   
+        //db.read(table,keyname,fields,new HashMap<String,String>());   
+        
+        db.read(table,keyname,fields,pa);   
     }
 
     public void doTransactionRead(DB db)
@@ -837,12 +889,52 @@ public class CoreWorkload extends Workload
 		String dbkey="user"+keynum;
 		
 		HashMap<String,String> values=new HashMap<String,String>();
+		
+		HashSet<String> fields = new HashSet<String>();
+		
 		for (int i=0; i<fieldcount; i++)
 		{
 			String fieldkey="field"+i;
 			String data=Utils.ASCIIString(fieldlength);
 			values.put(fieldkey,data);
+			
+			fields.add(fieldkey);
 		}
+		
+		//chen
+        OperationLog oplog = new OperationLog("INSERT", dbkey, fields, "");
+        
+        writeOperation(oplog);
+		
+		
 		db.insert(table,dbkey,values);
 	}
+	
+	public void doTransactionInsert(DB db, OperationLog operation)
+    {
+        //choose the next key
+       /* int keynum=transactioninsertkeysequence.nextInt();
+        if (!orderedinserts)
+        {
+            keynum=Utils.hash(keynum);
+        }*/
+        String dbkey=operation._key;
+        
+        HashMap<String,String> values=new HashMap<String,String>();
+     /*   for (int i=0; i<fieldcount; i++)
+        {
+            String fieldkey="field"+i;
+            String data=Utils.ASCIIString(fieldlength);
+            values.put(fieldkey,data);
+        }*/
+        
+        for (String fieldname : operation._field)
+        {
+            String data=Utils.ASCIIString(fieldlength);         
+            values.put(fieldname,data);
+        }
+        
+        
+        db.insert(table,dbkey,values);
+    }
 }

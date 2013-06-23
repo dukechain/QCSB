@@ -100,7 +100,9 @@ public class DBWrapper extends DB
 		String paraString = result.get("scheduler");
 		Penalty penalty = new Penalty(paraString);
 		
-		//penalty
+		penalty.client_issue_time = st;
+		penalty.client_finished_time = en;
+		penalty.client_latency = en-st;
 		
 		penaltyresult(penalty, res);
 		

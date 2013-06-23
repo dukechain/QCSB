@@ -148,11 +148,11 @@ public class OneMeasurementHistogram extends OneMeasurement
       exporter.write(getName(), "Return="+I, val[0]);
     }     
 
-    for (int i=0; i<_buckets; i++)
+    /*for (int i=0; i<_buckets; i++)
     {
       exporter.write(getName(), Integer.toString(i), histogram[i]);
     }
-    exporter.write(getName(), ">"+_buckets, histogramoverflow);
+    exporter.write(getName(), ">"+_buckets, histogramoverflow);*/
   }
 
 	@Override
