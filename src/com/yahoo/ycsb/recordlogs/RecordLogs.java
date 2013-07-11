@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Properties;
 
 import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
-import com.yammer.metrics.util.PercentGauge;
 
 public class RecordLogs
 {

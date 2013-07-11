@@ -496,14 +496,27 @@ public class CoreWorkload extends Workload
 		
 		HashSet<String> fields = new HashSet<String>();
 		
-		for (int i=0; i<fieldcount; i++)
+		int field_count = new UniformIntegerGenerator(1, fieldcount).nextInt();
+		
+		for (int i=0; i<field_count; i++)
+        {
+		    //int field_length = new UniformIntegerGenerator(1, fieldlength).nextInt();
+		    
+            String fieldkey="field"+i;
+            String data=Utils.ASCIIString(fieldlength);
+            values.put(fieldkey,data);
+            
+            fields.add(fieldkey);
+        }
+		
+		/*for (int i=0; i<fieldcount; i++)
 		{
 			String fieldkey="field"+i;
 			String data=Utils.ASCIIString(fieldlength);
 			values.put(fieldkey,data);
 			
 			fields.add(fieldkey);
-		}
+		}*/
 		
 		
 		OperationLog oplog = new OperationLog("LOAD", dbkey, fields, "");
@@ -892,14 +905,28 @@ public class CoreWorkload extends Workload
 		
 		HashSet<String> fields = new HashSet<String>();
 		
-		for (int i=0; i<fieldcount; i++)
+
+		int field_count = new UniformIntegerGenerator(1, fieldcount).nextInt();
+        
+        for (int i=0; i<field_count; i++)
+        {
+            //int field_length = new UniformIntegerGenerator(1, fieldlength).nextInt();
+            
+            String fieldkey="field"+i;
+            String data=Utils.ASCIIString(fieldlength);
+            values.put(fieldkey,data);
+            
+            fields.add(fieldkey);
+        }
+		
+		/*for (int i=0; i<fieldcount; i++)
 		{
 			String fieldkey="field"+i;
 			String data=Utils.ASCIIString(fieldlength);
 			values.put(fieldkey,data);
 			
 			fields.add(fieldkey);
-		}
+		}*/
 		
 		//chen
         OperationLog oplog = new OperationLog("INSERT", dbkey, fields, "");
