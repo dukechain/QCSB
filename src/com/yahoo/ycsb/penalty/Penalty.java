@@ -28,7 +28,7 @@ public class Penalty extends SchedulerParameter
     
     public double getTardiness()
     {
-        return local_finished_time-tardiness_deadline;
+        return local_finished_time- tardiness_deadline;
     }
     
     public double getStaleness()
