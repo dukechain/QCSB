@@ -226,6 +226,31 @@ public class CoreWorkload extends Workload
 	
 	public static final String WORKLOAD_PATH_PROPERTY_DEFAULT="./workload.txt";
 	
+	public static final String tardiness_bound_PROPERTY="tardiness_bound";
+	
+	public static final String tardiness_bound_PROPERTY_DEFAULT="100";
+	
+	public static final String staleness_bound_PROPERTY="staleness_bound";
+    
+    public static final String staleness_bound_PROPERTY_DEFAULT="100";
+    
+    public static final String low_bound_QoS_preference_PROPERTY="low_preference";
+    
+    public static final String low_bound_QoS_preference_PROPERTY_DEFAULT="0.5";
+    
+    public static final String high_bound_QoS_preference_PROPERTY="high_preference";
+    
+    public static final String high_bound_QoS_preference_PROPERTY_DEFAULT="0.5";
+    
+    public static final String low_bound_query_weight_PROPERTY="low_weight";
+    
+    public static final String low_bound_query_weight_PROPERTY_DEFAULT="1";
+    
+    public static final String high_bound_query_weight_PROPERTY="high_weight";
+    
+    public static final String high_bound_query_weight_PROPERTY_DEFAULT="1";
+    
+	
 	IntegerGenerator keysequence;
 
 	DiscreteGenerator operationchooser;
@@ -247,6 +272,16 @@ public class CoreWorkload extends Workload
 	boolean oldworkload = false;
 	
 	String workloadpath = null;
+	
+	
+	int tardiness_bound;
+	int staleness_bound;
+	
+	double low_bound_QoS_preference;
+	double high_bound_QoS_preference;
+	
+	int low_bound_query_weight;
+	int high_bound_query_weight;
 	
 	BlockingQueue<String> workloadhistories;
 	
@@ -363,6 +398,15 @@ public class CoreWorkload extends Workload
 		/**
 		 * chen add
 		 */
+		tardiness_bound=Integer.parseInt(p.getProperty(tardiness_bound_PROPERTY,tardiness_bound_PROPERTY_DEFAULT));
+		staleness_bound=Integer.parseInt(p.getProperty(staleness_bound_PROPERTY, staleness_bound_PROPERTY_DEFAULT));
+		
+		low_bound_QoS_preference=Double.parseDouble(p.getProperty(low_bound_QoS_preference_PROPERTY, low_bound_QoS_preference_PROPERTY_DEFAULT));
+		high_bound_QoS_preference=Double.parseDouble(p.getProperty(high_bound_QoS_preference_PROPERTY, high_bound_QoS_preference_PROPERTY_DEFAULT));
+		
+		low_bound_query_weight=Integer.parseInt(p.getProperty(low_bound_query_weight_PROPERTY, low_bound_query_weight_PROPERTY_DEFAULT));
+		high_bound_query_weight=Integer.parseInt(p.getProperty(high_bound_query_weight_PROPERTY, high_bound_query_weight_PROPERTY_DEFAULT));
+		
 		workloadpath = p.getProperty(WORKLOAD_PATH_PROPERTY);
 		if (workloadpath!=null)
         {
@@ -383,7 +427,9 @@ public class CoreWorkload extends Workload
             }
         }
 		
-		
+		/**
+		 * 
+		 */
 		
 		
 		if (p.getProperty(INSERT_ORDER_PROPERTY,INSERT_ORDER_PROPERTY_DEFAULT).compareTo("hashed")==0)
@@ -690,13 +736,15 @@ public class CoreWorkload extends Workload
 		
 		SchedulerParameter paras = new SchedulerParameter();
 		
-		paras.tardiness_deadline = new UniformIntegerGenerator(0, 1000).nextInt();
+		paras.tardiness_deadline = new UniformIntegerGenerator(0, tardiness_bound).nextInt();
 		
-		paras.staleness_deadline = new UniformIntegerGenerator(0, 1000).nextInt();
+		paras.staleness_deadline = new UniformIntegerGenerator(0, staleness_bound).nextInt();
 		
-		paras.QoS_preference = 0.5;
+		paras.QoS_preference = new UniformIntegerGenerator((int)(low_bound_QoS_preference*10d), 
+		        (int)(high_bound_QoS_preference*10d)).nextInt()/10d;
 		
-		paras.query_weight = 1;
+		paras.query_weight = new UniformIntegerGenerator(low_bound_query_weight, 
+		        high_bound_query_weight).nextInt();
 
 		OperationLog oplog = new OperationLog("READ", keyname, fields, paras.toString());
 		

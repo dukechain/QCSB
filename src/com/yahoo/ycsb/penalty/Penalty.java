@@ -23,12 +23,13 @@ public class Penalty extends SchedulerParameter
     
     public double getQoDPenalty()
     {
-        return QoS_preference*query_weight*getStaleness();
+        return (1-QoS_preference)*query_weight*getStaleness();
     }
     
     public double getTardiness()
     {
-        return local_finished_time- tardiness_deadline;
+        long tardiness = local_finished_time- tardiness_deadline;
+        return (tardiness>0)?tardiness:0;
     }
     
     public double getStaleness()
@@ -38,7 +39,8 @@ public class Penalty extends SchedulerParameter
             return 0;
         }
         
-        return local_finished_time-staleness_deadline;
+        long staleness = local_finished_time-staleness_deadline;
+        return (staleness>0)?staleness:0;
     }
     
     public String toprint()
